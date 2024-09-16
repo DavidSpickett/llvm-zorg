@@ -1,4 +1,5 @@
 from twisted.internet import defer
+from twisted.python import log
 
 @defer.inlineCallbacks
 def collapseRequests(master, builder, req1, req2):
@@ -22,26 +23,32 @@ def collapseRequests(master, builder, req1, req2):
         ('buildsets', str(req2['buildsetid'])))
 
     # Fetch the buildset properties.
-    selfBuildsetPoperties = yield \
-        master.db.buildsets.getBuildsetProperties(
-            str(req1['buildsetid'])
-        )
-    otherBuildsetPoperties = yield \
-        master.db.buildsets.getBuildsetProperties(
-            str(req2['buildsetid'])
-        )
+    selfBuildsetPoperties = yield master.db.buildsets.getBuildsetProperties(
+        str(req1["buildsetid"])
+    )
+    otherBuildsetPoperties = yield master.db.buildsets.getBuildsetProperties(
+        str(req2["buildsetid"])
+    )
+
+    log.msg("collapseRequests")
+    log.msg("selfBuildSetProperties: {}".format(selfBuildsetPoperties))
+    log.msg("otherBuildSetProperties: {}".format(otherBuildsetPoperties))
 
     # If the build is going to be a clean build anyway, we can collapse a clean
     # build and a non-clean build.
     if getattr(builder.config.factory, "clean"):
         del selfBuildsetPoperties["clean_obj"]
         del otherBuildsetPoperties["clean_obj"]
+        log.msg("Removing clean_obj from build set properties.")
 
     # Check buildsets properties and do not collapse
     # if properties do not match. This includes the check
     # for different schedulers.
     if selfBuildsetPoperties != otherBuildsetPoperties:
+        log.msg("Not collapsing requests, due to differing build set properties.")
         return False
+
+    log.msg("Build set properties were the same.")
 
     # Extract sourcestamps, as dictionaries by codebase.
     selfSources = dict((ss['codebase'], ss)
