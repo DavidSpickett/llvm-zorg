@@ -37,8 +37,10 @@ def collapseRequests(master, builder, req1, req2):
     # If the build is going to be a clean build anyway, we can collapse a clean
     # build and a non-clean build.
     if getattr(builder.config.factory, "clean"):
-        del selfBuildsetPoperties["clean_obj"]
-        del otherBuildsetPoperties["clean_obj"]
+        if 'clean_obj' in selfBuildsetPoperties:
+            del selfBuildsetPoperties["clean_obj"]
+        if 'clean_obj' in otherBuildsetPoperties:
+            del otherBuildsetPoperties["clean_obj"]
         log.msg("Removing clean_obj from build set properties.")
 
     # Check buildsets properties and do not collapse
